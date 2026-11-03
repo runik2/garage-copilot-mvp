@@ -1,0 +1,32 @@
+{
+  "name": "garage-copilot-mvp",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -n api,web -c green,blue \"node --watch server/index.js\" \"vite\"",
+    "server": "node server/index.js",
+    "build": "vite build",
+    "preview": "vite preview",
+    "db:migrate": "node server/migrate.js",
+    "content:check": "node scripts/check-content.mjs",
+    "preview:render": "node scripts/render-preview.mjs",
+    "sources:import": "node scripts/import-sources.mjs"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.5.14",
+    "@vitejs/plugin-react": "latest",
+    "bcryptjs": "^3.0.2",
+    "concurrently": "^9.2.1",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "lucide-react": "latest",
+    "multer": "^2.0.2",
+    "pdf-parse": "^2.4.5",
+    "pg": "^8.16.3",
+    "react": "latest",
+    "react-dom": "latest",
+    "vite": "latest"
+  }
+}

@@ -1,0 +1,17 @@
+-- gen_random_uuid() встроен в PostgreSQL 13+, поэтому pgcrypto не обязателен.
+-- Блок оставлен для старых серверов и не роняет миграцию, если расширения нет.
+do $$ begin
+  create extension if not exists pgcrypto;
+exception when others then null;
+end $$;
+create table if not exists users (id uuid primary key default gen_random_uuid(),email text unique not null,password_hash text not null,created_at timestamptz not null default now());
+create table if not exists vehicles (id uuid primary key default gen_random_uuid(),user_id uuid not null references users(id) on delete cascade,vin text,make text not null,model text not null,generation text,model_year int check(model_year between 1886 and 2200),engine text,transmission text,drivetrain text,market text,mileage int,created_at timestamptz not null default now(),updated_at timestamptz not null default now());
+create unique index if not exists vehicles_user_vin on vehicles(user_id,vin) where vin is not null and vin<>'';
+create table if not exists sources (id uuid primary key default gen_random_uuid(),user_id uuid not null references users(id) on delete cascade,vehicle_id uuid references vehicles(id) on delete set null,make text,model text,node text,kind text not null check(kind in('official_manual','open_bulletin','recall','personal_note','uploaded_document','photo')),title text not null,publisher text,source_date date,url text,license_note text,confidence text not null default 'unknown' check(confidence in('high','medium','low','unknown')),filename text,mime_type text,storage_key text,sha256 text,page_count int,created_at timestamptz not null default now());
+create table if not exists source_pages (id uuid primary key default gen_random_uuid(),source_id uuid not null references sources(id) on delete cascade,page_number int not null,content text not null default '',search_vector tsvector generated always as(to_tsvector('simple',coalesce(content,''))) stored,unique(source_id,page_number));
+create index if not exists source_pages_search on source_pages using gin(search_vector);
+create table if not exists jobs (id uuid primary key default gen_random_uuid(),vehicle_id uuid not null references vehicles(id) on delete cascade,title text not null,symptom text,status text not null default 'draft' check(status in('draft','active','done')),is_favorite boolean not null default false,started_at timestamptz,completed_at timestamptz,created_at timestamptz not null default now(),updated_at timestamptz not null default now());
+create table if not exists job_steps (id uuid primary key default gen_random_uuid(),job_id uuid not null references jobs(id) on delete cascade,position int not null,section text not null,body text not null,completed boolean not null default false,safety_level text not null default 'normal',confidence text not null default 'unknown',source_id uuid references sources(id) on delete set null,source_page int,unique(job_id,position));
+create table if not exists vehicle_notes (id uuid primary key default gen_random_uuid(),vehicle_id uuid not null references vehicles(id) on delete cascade,node text,body text not null,source_id uuid references sources(id) on delete set null,created_at timestamptz not null default now());
+create index if not exists vehicle_search on vehicles using gin(to_tsvector('simple',coalesce(vin,'')||' '||make||' '||model||' '||coalesce(engine,'')||' '||coalesce(transmission,'')));
+create index if not exists job_search on jobs using gin(to_tsvector('simple',title||' '||coalesce(symptom,'')));

@@ -1,0 +1,1 @@
+import fs from 'node:fs/promises';import {PDFParse} from 'pdf-parse';export async function extractPdfPages(path){const data=await fs.readFile(path);const parser=new PDFParse({data});try{const r=await parser.getText();return{pages:r.pages.map((p,i)=>({page:i+1,text:p.text||''})),count:r.total||r.pages.length}}finally{await parser.destroy()}}
